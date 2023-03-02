@@ -221,10 +221,10 @@ public class Robot extends TimedRobot {
         }
 
         //Equation that requires information about wheel allignment taking the mode and right stick value multiplying them and adding the base voltage
-        frontRightEq = gainFront*(steer) + .88;
-        frontLeftEq = gainFront*(steer) + .99;
-        backRightEq = gainBack*(steer) + .41;
-        backLeftEq = gainBack*(steer) + .39;
+        frontRightEq = gainFront*(steer) + 3.36;
+        frontLeftEq = gainFront*(steer) + 3.48;
+        backRightEq = gainBack*(steer) + 1.06;
+        backLeftEq = gainBack*(steer) + 2.79;
 
         //Compute Error Signals from each Encoder and Adjusts if command/feedback flips from 0 to 5 or vise versa
 
