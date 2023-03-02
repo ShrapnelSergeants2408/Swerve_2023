@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.wpilibj.AnalogInput;
@@ -25,10 +27,10 @@ public class Robot extends TimedRobot {
     private String m_autoSelected;
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-    CANSparkMax frontRightTurn;
-    CANSparkMax frontLeftTurn;
-    CANSparkMax backRightTurn;
-    CANSparkMax backLeftTurn;
+    VictorSPX frontRightTurn;
+    VictorSPX frontLeftTurn;
+    VictorSPX backRightTurn;
+    VictorSPX backLeftTurn;
 
     CANSparkMax frontRightDrive;
     CANSparkMax frontLeftDrive;
@@ -54,20 +56,20 @@ public class Robot extends TimedRobot {
         m_chooser.addOption("My Auto", kCustomAuto);
         SmartDashboard.putData("Auto choices", m_chooser);
 
-        frontRightTurn = new CANSparkMax(1, MotorType.kBrushed);
-        frontLeftTurn = new CANSparkMax(2, MotorType.kBrushed);
-        backRightTurn = new CANSparkMax(3, MotorType.kBrushed);
-        backLeftTurn = new CANSparkMax(4, MotorType.kBrushed);
+        frontRightTurn = new VictorSPX(32);
+        frontLeftTurn = new VictorSPX(30);
+        backRightTurn = new VictorSPX(33);
+        backLeftTurn = new VictorSPX(31);
 
-        frontRightDrive = new CANSparkMax(5, MotorType.kBrushed);
-        frontLeftDrive = new CANSparkMax(6, MotorType.kBrushed);
-        backRightDrive = new CANSparkMax(7, MotorType.kBrushed);
-        backLeftDrive = new CANSparkMax(8, MotorType.kBrushed);
+        frontRightDrive = new CANSparkMax(22, MotorType.kBrushless);
+        frontLeftDrive = new CANSparkMax(20, MotorType.kBrushless);
+        backRightDrive = new CANSparkMax(23, MotorType.kBrushless);
+        backLeftDrive = new CANSparkMax(21, MotorType.kBrushless);
 
-        frontRightEnc = new AnalogInput(0);
-        frontLeftEnc = new AnalogInput(1);
-        backRightEnc = new AnalogInput(2);
-        backLeftEnc = new AnalogInput(3);
+        frontRightEnc = new AnalogInput(2);
+        frontLeftEnc = new AnalogInput(0);
+        backRightEnc = new AnalogInput(3);
+        backLeftEnc = new AnalogInput(1);
     }
 
   /**
@@ -219,10 +221,10 @@ public class Robot extends TimedRobot {
         }
 
         //Equation that requires information about wheel allignment taking the mode and right stick value multiplying them and adding the base voltage
-        frontRightEq = gainFront*(steer) + 1.44;
-        frontLeftEq = gainFront*(steer) + 2.94;
-        backRightEq = gainBack*(steer) + 1.94;
-        backLeftEq = gainBack*(steer) + 0.73;
+        frontRightEq = gainFront*(steer) + .88;
+        frontLeftEq = gainFront*(steer) + .99;
+        backRightEq = gainBack*(steer) + .41;
+        backLeftEq = gainBack*(steer) + .39;
 
         //Compute Error Signals from each Encoder and Adjusts if command/feedback flips from 0 to 5 or vise versa
 
@@ -258,12 +260,16 @@ public class Robot extends TimedRobot {
             backLeftError = backLeftError + 5.0;
         }
 
+        SmartDashboard.putNumber("front left Voltage", frontLeftAverage);
+        SmartDashboard.putNumber("back left Voltage", backLeftAverage);
+        SmartDashboard.putNumber("front right Voltage", frontRightAverage);
+        SmartDashboard.putNumber("back right Voltage", backRightAverage);
         //Set steering motor commands to drive the error to 0
 
-        frontRightTurn.set(frontRightError*1.5);
-        frontLeftTurn.set(frontLeftError*1.5);
-        backRightTurn.set(backRightError*1.5);
-        backLeftTurn.set(backLeftError*1.5);
+        frontRightTurn.set(VictorSPXControlMode.PercentOutput,frontRightError*1.5);
+        frontLeftTurn.set(VictorSPXControlMode.PercentOutput,frontLeftError*1.5);
+        backRightTurn.set(VictorSPXControlMode.PercentOutput,backRightError*1.5);
+        backLeftTurn.set(VictorSPXControlMode.PercentOutput,backLeftError*1.5);
 
         //Sets the Driving Motors power to drive
 
