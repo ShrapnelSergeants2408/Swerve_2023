@@ -4,14 +4,20 @@
 
 package frc.robot;
 
+import org.photonvision.PhotonCamera;
+
 import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -23,7 +29,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class Robot extends TimedRobot {
     private static final String kDefaultAuto = "Default";
-    private static final String kCustomAuto = "My Auto";
+    private static final String kCustomAuto = "Auto left"; 
     private String m_autoSelected;
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -31,18 +37,24 @@ public class Robot extends TimedRobot {
     VictorSPX frontLeftTurn;
     VictorSPX backRightTurn;
     VictorSPX backLeftTurn;
+    VictorSPX wristMotor;
+    VictorSPX armExtensionMotor;
 
     CANSparkMax frontRightDrive;
     CANSparkMax frontLeftDrive;
     CANSparkMax backRightDrive;
     CANSparkMax backLeftDrive;
+    CANSparkMax armLiftMotor; 
+    
+    DoubleSolenoid gripperDoubleSolenoid;
 
     AnalogInput frontRightEnc;
     AnalogInput frontLeftEnc;
     AnalogInput backRightEnc;
     AnalogInput backLeftEnc;
 
-    XboxController controller1 = new XboxController(0);
+    XboxController driverController = new XboxController(0);
+    XboxController operatorController = new XboxController(1);
 
     Timer autoTimer = new Timer();
 
@@ -60,16 +72,24 @@ public class Robot extends TimedRobot {
         frontLeftTurn = new VictorSPX(30);
         backRightTurn = new VictorSPX(33);
         backLeftTurn = new VictorSPX(31);
+        armExtensionMotor = new VictorSPX(50);
 
         frontRightDrive = new CANSparkMax(22, MotorType.kBrushless);
         frontLeftDrive = new CANSparkMax(20, MotorType.kBrushless);
         backRightDrive = new CANSparkMax(23, MotorType.kBrushless);
         backLeftDrive = new CANSparkMax(21, MotorType.kBrushless);
 
+        armLiftMotor = new CANSparkMax(40, MotorType.kBrushless);
+        
+
+        gripperDoubleSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
+
         frontRightEnc = new AnalogInput(2);
         frontLeftEnc = new AnalogInput(0);
         backRightEnc = new AnalogInput(3);
         backLeftEnc = new AnalogInput(1);
+
+        
     }
 
   /**
@@ -80,7 +100,10 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
     @Override
-    public void robotPeriodic() {}
+    public void robotPeriodic() {
+
+        
+    }
 
     /**
      * This autonomous (along with the chooser code above) shows how to select between different
@@ -113,6 +136,7 @@ public class Robot extends TimedRobot {
                 // Put custom auto code here
             break;
             case kDefaultAuto:
+            break;
             default:
 
                 double autoDriveSpeed;
@@ -159,28 +183,112 @@ public class Robot extends TimedRobot {
     public void teleopPeriodic() {
 
         //Get values from Xbox Controller (Left Stick X and Y axis, Right Stick X Axis, and Right Bumper)
-        double leftStickX = controller1.getLeftX();
-        double leftStickY = controller1.getLeftY();
+        double leftStickX = driverController.getLeftX();
+        double leftStickY = driverController.getLeftY();
 
-        double rightStickX = controller1.getRightX();
+        double rightStickX = driverController.getRightX();
 
-        boolean modeButton = controller1.getRightBumper();
+        boolean modeButton = driverController.getRightBumper();
+        
+        boolean grabButton = operatorController.getXButton();
+        boolean releaseButton = operatorController.getBButton();
+
+        boolean armPosUp = operatorController.getYButton();
+        boolean armPosDown = operatorController.getAButton();
+
+        //frontLeftDrive.getEncoder().
 
         //Shaping the Left Y Axis for smoother Control
-
-        double leftStickY_shaped;
-
+        double leftStickY_shaped; 
         if(leftStickY > 0) {
         leftStickY_shaped = leftStickY*leftStickY;
         } else {
         leftStickY_shaped = -leftStickY*leftStickY;
         }
 
+        // arm controls
+        String armSet = "start";
+
+        if(driverController.getYButton()){
+            armExtensionMotor.set(VictorSPXControlMode.PercentOutput,0.5);
+            SmartDashboard.putBoolean("working", true);
+        } else {
+            armExtensionMotor.set(VictorSPXControlMode.Disabled, 0);
+            SmartDashboard.putBoolean("working", false);
+        }
+        //manual arm control 
+        if(operatorController.getRightTriggerAxis() > 0){
+            armLiftMotor.set(.3);
+        }else if (operatorController.getLeftTriggerAxis() > 0){
+            armLiftMotor.set(-.3);
+        }
+        //Logic for arm going up
+        if(armPosUp && armSet != "high"){
+            if(armSet == "start"){
+                armSet = "low";
+                armPosition(armSet);
+            } else if(armSet == "low"){
+                armSet = "med";
+                armPosition("med");
+            } else if(armSet == "med"){
+                armSet = "high";
+                armPosition(armSet);
+            }
+        // logic for arm going down
+        } else if(armPosDown && armSet != "start"){
+            if(armSet == "high"){
+                armSet = "med";
+                armPosition(armSet);
+            } else if (armSet =="med"){
+                armSet = "low";
+                armPosition(armSet);
+            } else if (armSet == "low"){
+                armSet = "start";
+                armPosition(armSet);
+            }
+        }
+
+
+        // claw controls
+        if(grabButton){
+            gripperDoubleSolenoid.set(Value.kForward);
+        }else if(releaseButton){
+            gripperDoubleSolenoid.set(Value.kReverse);
+        }else{
+            gripperDoubleSolenoid.set(Value.kOff);
+        }
+
         //Calling the Swerve Drive Function and Feeding it the Values from our Controller
         //Left Stick Y Shaped is being assigned to the Drive Speed, Right Stick X is being assigned to Wheel Turning, left X is being assigned to diff speed and Right Bumper selects mode
 
         SwerveDrive(leftStickY_shaped, rightStickX, leftStickX, modeButton);
+    }
 
+    public void armPosition(String position){
+        double armEq;
+        double armGain;
+        double armError;
+        RelativeEncoder armLiftEncoder = armLiftMotor.getEncoder();
+        double armLiftPosition = armLiftEncoder.getPosition();
+
+        switch(position) {
+            case "start":
+
+            break;
+            
+            case "low": 
+
+            break;
+
+            case "med":
+
+            break;
+
+            case "high":
+
+            break;
+
+        }
     }
 
 
