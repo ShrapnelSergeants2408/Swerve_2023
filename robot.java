@@ -4,15 +4,20 @@
 
 package frc.robot;
 
-import org.photonvision.PhotonCamera;
-
 import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.PneumaticHub;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
@@ -37,7 +42,6 @@ public class Robot extends TimedRobot {
     VictorSPX frontLeftTurn;
     VictorSPX backRightTurn;
     VictorSPX backLeftTurn;
-    VictorSPX wristMotor;
     VictorSPX armExtensionMotor;
 
     CANSparkMax frontRightDrive;
@@ -45,7 +49,13 @@ public class Robot extends TimedRobot {
     CANSparkMax backRightDrive;
     CANSparkMax backLeftDrive;
     CANSparkMax armLiftMotor; 
-    
+    CANSparkMax wristMotor;
+
+    //RelativeEncoder armLiftMotorEncoder;
+    //RelativeEncoder wristMotorEncoder;
+
+    Compressor compressor;
+
     DoubleSolenoid gripperDoubleSolenoid;
 
     AnalogInput frontRightEnc;
@@ -53,10 +63,17 @@ public class Robot extends TimedRobot {
     AnalogInput backRightEnc;
     AnalogInput backLeftEnc;
 
+    
+    //PneumaticHub ph = new PneumaticHub();
+
     XboxController driverController = new XboxController(0);
     XboxController operatorController = new XboxController(1);
 
     Timer autoTimer = new Timer();
+
+    UsbCamera DriverCam;
+    UsbCamera ArmCam;
+    NetworkTableEntry cameraSelection;
 
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -67,29 +84,42 @@ public class Robot extends TimedRobot {
         m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
         m_chooser.addOption("My Auto", kCustomAuto);
         SmartDashboard.putData("Auto choices", m_chooser);
-
+        //ph.enableCompressorDigital();
+        //compressor = new Compressor(1,PneumaticsModuleType.REVPH);
+        //compressor.enableDigital();
         frontRightTurn = new VictorSPX(32);
         frontLeftTurn = new VictorSPX(30);
         backRightTurn = new VictorSPX(33);
         backLeftTurn = new VictorSPX(31);
         armExtensionMotor = new VictorSPX(50);
 
+        wristMotor = new CANSparkMax(25, MotorType.kBrushless);
         frontRightDrive = new CANSparkMax(22, MotorType.kBrushless);
         frontLeftDrive = new CANSparkMax(20, MotorType.kBrushless);
         backRightDrive = new CANSparkMax(23, MotorType.kBrushless);
         backLeftDrive = new CANSparkMax(21, MotorType.kBrushless);
 
         armLiftMotor = new CANSparkMax(40, MotorType.kBrushless);
+        //armLiftMotorEncoder = armLiftMotor.getEncoder();
+        //wristMotorEncoder = wristMotor.getEncoder();
         
+        //armLiftMotorEncoder.setPositionConversionFactor(3.6);
+        //armLiftMotorEncoder.setPosition(0.0);
 
-        gripperDoubleSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
+        //wristMotorEncoder.setPositionConversionFactor(3.6);
+        //wristMotorEncoder.setPosition(0.0);
+
+        gripperDoubleSolenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
 
         frontRightEnc = new AnalogInput(2);
         frontLeftEnc = new AnalogInput(0);
         backRightEnc = new AnalogInput(3);
         backLeftEnc = new AnalogInput(1);
 
-        
+        DriverCam = CameraServer.startAutomaticCapture(0);
+        ArmCam = CameraServer.startAutomaticCapture(1);
+
+        cameraSelection = NetworkTableInstance.getDefault().getTable("").getEntry("CameraSelection");
     }
 
   /**
@@ -176,7 +206,8 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
     @Override
-    public void teleopInit() {}
+    public void teleopInit() {
+    }
 
   /** This function is called periodically during operator control. */
     @Override
@@ -186,18 +217,31 @@ public class Robot extends TimedRobot {
         double leftStickX = driverController.getLeftX();
         double leftStickY = driverController.getLeftY();
 
+        double DriverCamButton = driverController.getRightTriggerAxis();
+        double ArmCamButton = driverController.getLeftTriggerAxis();
+
         double rightStickX = driverController.getRightX();
 
         boolean modeButton = driverController.getRightBumper();
         
+        double wristUp =  operatorController.getLeftTriggerAxis();
+        double wristDown = operatorController.getRightTriggerAxis();
         boolean grabButton = operatorController.getXButton();
         boolean releaseButton = operatorController.getBButton();
+        
+        //TODO ADD BUTTONS IN USE MEANING CAMERA SWITCH BUTTONS AND ARM RAISING BUTTONS
 
-        boolean armPosUp = operatorController.getYButton();
-        boolean armPosDown = operatorController.getAButton();
+        boolean armPosUp = operatorController.getRightBumper();
+        boolean armPosDown = operatorController.getLeftBumper();
 
         //frontLeftDrive.getEncoder().
-
+        if (DriverCamButton > 0.1) {
+            System.out.println("Driver Cam");
+            cameraSelection.setString(DriverCam.getName());
+        } else if (ArmCamButton > 0.1) {
+            System.out.println("Arm Cam");
+            cameraSelection.setString(ArmCam.getName());
+        }
         //Shaping the Left Y Axis for smoother Control
         double leftStickY_shaped; 
         if(leftStickY > 0) {
@@ -207,23 +251,39 @@ public class Robot extends TimedRobot {
         }
 
         // arm controls
-        String armSet = "start";
-
-        if(driverController.getYButton()){
+        //String armSet = "start";
+         
+        if(operatorController.getYButton()){
             armExtensionMotor.set(VictorSPXControlMode.PercentOutput,0.5);
-            SmartDashboard.putBoolean("working", true);
-        } else {
+            SmartDashboard.putString("Extension Status", "Extending");
+        } else if(operatorController.getAButton()){
+            armExtensionMotor.set(VictorSPXControlMode.PercentOutput,-0.5);
+            SmartDashboard.putString("Extension Status", "Retracting");
+        }else {
             armExtensionMotor.set(VictorSPXControlMode.Disabled, 0);
-            SmartDashboard.putBoolean("working", false);
-        }
+            SmartDashboard.putString("Extension Status", "Stopped");
+        }  
         //manual arm control 
-        if(operatorController.getRightTriggerAxis() > 0){
-            armLiftMotor.set(.3);
-        }else if (operatorController.getLeftTriggerAxis() > 0){
-            armLiftMotor.set(-.3);
+        if(armPosUp){
+            armLiftMotor.set(.15);
+        }else if (armPosDown){
+            armLiftMotor.set(-.15);
+        } else {
+            armLiftMotor.disable();
         }
+
+        if(wristUp > 0){
+            wristMotor.set(.1);
+        } else if(wristDown > 0){
+            wristMotor.set(-.1);
+        } else {
+            wristMotor.disable();
+        }
+
+
+
         //Logic for arm going up
-        if(armPosUp && armSet != "high"){
+        /*if(armPosUp && armSet != "high"){
             if(armSet == "start"){
                 armSet = "low";
                 armPosition(armSet);
@@ -247,6 +307,7 @@ public class Robot extends TimedRobot {
                 armPosition(armSet);
             }
         }
+        */
 
 
         // claw controls
@@ -264,20 +325,29 @@ public class Robot extends TimedRobot {
         SwerveDrive(leftStickY_shaped, rightStickX, leftStickX, modeButton);
     }
 
-    public void armPosition(String position){
-        double armEq;
-        double armGain;
-        double armError;
+    /*public void armPosition(String position){
+        //double armEq;
+        //double armGain;
+        //double armError;
         RelativeEncoder armLiftEncoder = armLiftMotor.getEncoder();
-        double armLiftPosition = armLiftEncoder.getPosition();
+        double armLiftPosition = Math.max(0, Math.min(, kDefaultPeriod))
+
+
+        //double armLiftPosition = armLiftEncoder.getPosition();
 
         switch(position) {
             case "start":
-
+                if(armLiftEncoder.getPosition() != 0.00 && armLiftEncoder.getPosition() > 0){
+                    while(armLiftEncoder.getPosition() > 0) {
+                        armLiftMotor.set(-.25);
+                    }
+                }
             break;
             
             case "low": 
-
+                if(armLiftEncoder.getPosition() != 15.00 && armLiftEncoder.getPosition() > 17.00){
+                    while(armLiftEncoder.getPosition() > )
+                }
             break;
 
             case "med":
@@ -289,7 +359,7 @@ public class Robot extends TimedRobot {
             break;
 
         }
-    }
+    }*/
 
 
     //Creation of Swerve Drive Function
@@ -329,10 +399,10 @@ public class Robot extends TimedRobot {
         }
 
         //Equation that requires information about wheel allignment taking the mode and right stick value multiplying them and adding the base voltage
-        frontRightEq = gainFront*(steer) + 3.36;
-        frontLeftEq = gainFront*(steer) + 3.48;
-        backRightEq = gainBack*(steer) + 1.06;
-        backLeftEq = gainBack*(steer) + 2.79;
+        frontRightEq = gainFront*(steer) + 0.34;
+        frontLeftEq = gainFront*(steer) + 4.17;
+        backRightEq = gainBack*(steer) + 3.84;
+        backLeftEq = gainBack*(steer) + 0.90;
 
         //Compute Error Signals from each Encoder and Adjusts if command/feedback flips from 0 to 5 or vise versa
 
@@ -373,12 +443,12 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("front right Voltage", frontRightAverage);
         SmartDashboard.putNumber("back right Voltage", backRightAverage);
         //Set steering motor commands to drive the error to 0
-
+        
         frontRightTurn.set(VictorSPXControlMode.PercentOutput,frontRightError*1.5);
         frontLeftTurn.set(VictorSPXControlMode.PercentOutput,frontLeftError*1.5);
         backRightTurn.set(VictorSPXControlMode.PercentOutput,backRightError*1.5);
         backLeftTurn.set(VictorSPXControlMode.PercentOutput,backLeftError*1.5);
-
+        
         //Sets the Driving Motors power to drive
 
         frontRightDrive.set(Math.max(-1, Math.min(1, (driveSpeed+diffSpeed))));
