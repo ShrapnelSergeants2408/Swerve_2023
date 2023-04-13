@@ -27,14 +27,17 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
- * The VM is configured to automatically run this class, and to call the functions corresponding to
- * each mode, as described in the TimedRobot documentation. If you change the name of this class or
- * the package after creating this project, you must also update the build.gradle file in the
+ * The VM is configured to automatically run this class, and to call the
+ * functions corresponding to
+ * each mode, as described in the TimedRobot documentation. If you change the
+ * name of this class or
+ * the package after creating this project, you must also update the
+ * build.gradle file in the
  * project.
  */
 public class Robot extends TimedRobot {
     private static final String kDefaultAuto = "Default";
-    private static final String kCustomAuto = "Auto left"; 
+    private static final String kCustomAuto = "Auto left";
     private String m_autoSelected;
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -48,11 +51,11 @@ public class Robot extends TimedRobot {
     CANSparkMax frontLeftDrive;
     CANSparkMax backRightDrive;
     CANSparkMax backLeftDrive;
-    CANSparkMax armLiftMotor; 
+    CANSparkMax armLiftMotor;
     CANSparkMax wristMotor;
 
-    //RelativeEncoder armLiftMotorEncoder;
-    //RelativeEncoder wristMotorEncoder;
+    // RelativeEncoder armLiftMotorEncoder;
+    // RelativeEncoder wristMotorEncoder;
 
     Compressor compressor;
 
@@ -63,11 +66,11 @@ public class Robot extends TimedRobot {
     AnalogInput backRightEnc;
     AnalogInput backLeftEnc;
 
-    
-    //PneumaticHub ph = new PneumaticHub();
+    // PneumaticHub ph = new PneumaticHub();
 
     XboxController driverController = new XboxController(0);
-    XboxController operatorController = new XboxController(1);
+    XboxController armController = new XboxController(1);
+    XboxController clawController = new XboxController(2);
 
     Timer autoTimer = new Timer();
 
@@ -76,17 +79,18 @@ public class Robot extends TimedRobot {
     NetworkTableEntry cameraSelection;
 
     /**
-     * This function is run when the robot is first started up and should be used for any
+     * This function is run when the robot is first started up and should be used
+     * for any
      * initialization code.
-    */
+     */
     @Override
     public void robotInit() {
         m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
         m_chooser.addOption("My Auto", kCustomAuto);
         SmartDashboard.putData("Auto choices", m_chooser);
-        //ph.enableCompressorDigital();
-        //compressor = new Compressor(1,PneumaticsModuleType.REVPH);
-        //compressor.enableDigital();
+        // ph.enableCompressorDigital();
+        // compressor = new Compressor(1,PneumaticsModuleType.REVPH);
+        // compressor.enableDigital();
         frontRightTurn = new VictorSPX(32);
         frontLeftTurn = new VictorSPX(30);
         backRightTurn = new VictorSPX(33);
@@ -100,14 +104,14 @@ public class Robot extends TimedRobot {
         backLeftDrive = new CANSparkMax(21, MotorType.kBrushless);
 
         armLiftMotor = new CANSparkMax(40, MotorType.kBrushless);
-        //armLiftMotorEncoder = armLiftMotor.getEncoder();
-        //wristMotorEncoder = wristMotor.getEncoder();
-        
-        //armLiftMotorEncoder.setPositionConversionFactor(3.6);
-        //armLiftMotorEncoder.setPosition(0.0);
+        // armLiftMotorEncoder = armLiftMotor.getEncoder();
+        // wristMotorEncoder = wristMotor.getEncoder();
 
-        //wristMotorEncoder.setPositionConversionFactor(3.6);
-        //wristMotorEncoder.setPosition(0.0);
+        // armLiftMotorEncoder.setPositionConversionFactor(3.6);
+        // armLiftMotorEncoder.setPosition(0.0);
+
+        // wristMotorEncoder.setPositionConversionFactor(3.6);
+        // wristMotorEncoder.setPosition(0.0);
 
         gripperDoubleSolenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
 
@@ -122,51 +126,60 @@ public class Robot extends TimedRobot {
         cameraSelection = NetworkTableInstance.getDefault().getTable("").getEntry("CameraSelection");
     }
 
-  /**
-   * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
-   * that you want ran during disabled, autonomous, teleoperated and test.
-   *
-   * <p>This runs after the mode specific periodic functions, but before LiveWindow and
-   * SmartDashboard integrated updating.
-   */
+    /**
+     * This function is called every 20 ms, no matter the mode. Use this for items
+     * like diagnostics
+     * that you want ran during disabled, autonomous, teleoperated and test.
+     *
+     * <p>
+     * This runs after the mode specific periodic functions, but before LiveWindow
+     * and
+     * SmartDashboard integrated updating.
+     */
     @Override
     public void robotPeriodic() {
 
-        
     }
 
     /**
-     * This autonomous (along with the chooser code above) shows how to select between different
-     * autonomous modes using the dashboard. The sendable chooser code works with the Java
-     * SmartDashboard. If you prefer the LabVIEW Dashboard, remove all of the chooser code and
-     * uncomment the getString line to get the auto name from the text box below the Gyro
+     * This autonomous (along with the chooser code above) shows how to select
+     * between different
+     * autonomous modes using the dashboard. The sendable chooser code works with
+     * the Java
+     * SmartDashboard. If you prefer the LabVIEW Dashboard, remove all of the
+     * chooser code and
+     * uncomment the getString line to get the auto name from the text box below the
+     * Gyro
      *
-     * <p>You can add additional auto modes by adding additional comparisons to the switch structure
-     * below with additional strings. If using the SendableChooser make sure to add them to the
+     * <p>
+     * You can add additional auto modes by adding additional comparisons to the
+     * switch structure
+     * below with additional strings. If using the SendableChooser make sure to add
+     * them to the
      * chooser code above as well.
-    */
+     */
     @Override
     public void autonomousInit() {
         m_autoSelected = m_chooser.getSelected();
         // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
         System.out.println("Auto selected: " + m_autoSelected);
-        
-        //Reset Timer before use
+
+        // Reset Timer before use
         autoTimer.reset();
 
-        //Starts Timer for Auto mode
+        // Starts Timer for Auto mode
         autoTimer.start();
     }
 
-  /** This function is called periodically during autonomous. */
+    /** This function is called periodically during autonomous. */
     @Override
     public void autonomousPeriodic() {
         switch (m_autoSelected) {
             case kCustomAuto:
                 // Put custom auto code here
-            break;
+                break;
             case kDefaultAuto:
-            break;
+                break;
             default:
 
                 double autoDriveSpeed;
@@ -174,24 +187,23 @@ public class Robot extends TimedRobot {
                 double autoDiffSpeed;
                 boolean autoSpinMode;
 
-
-                //Drive Forward for 3 Seconds at .25 speed
-                if(autoTimer.get() < 3.0){
+                // Drive Forward for 3 Seconds at .25 speed
+                if (autoTimer.get() < 3.0) {
                     autoDriveSpeed = 0.25;
                     autoSteerAngle = 0.0;
                     autoDiffSpeed = 0.0;
                     autoSpinMode = false;
                     SwerveDrive(autoDriveSpeed, autoSteerAngle, autoDiffSpeed, autoSpinMode);
-                } 
-                //Spin at .25 Speed for .5 Seconds
-                else if(autoTimer.get() < 3.5){
+                }
+                // Spin at .25 Speed for .5 Seconds
+                else if (autoTimer.get() < 3.5) {
                     autoDriveSpeed = 0.25;
                     autoSteerAngle = 0.0;
                     autoDiffSpeed = 0.0;
                     autoSpinMode = true;
                     SwerveDrive(autoDriveSpeed, autoSteerAngle, autoDiffSpeed, autoSpinMode);
-                } 
-                //stop
+                }
+                // stop
                 else {
                     autoDriveSpeed = 0.0;
                     autoSteerAngle = 0.0;
@@ -200,20 +212,21 @@ public class Robot extends TimedRobot {
                     SwerveDrive(autoDriveSpeed, autoSteerAngle, autoDiffSpeed, autoSpinMode);
                 }
 
-            break;
+                break;
         }
     }
 
-  /** This function is called once when teleop is enabled. */
+    /** This function is called once when teleop is enabled. */
     @Override
     public void teleopInit() {
     }
 
-  /** This function is called periodically during operator control. */
+    /** This function is called periodically during arm control. */
     @Override
     public void teleopPeriodic() {
 
-        //Get values from Xbox Controller (Left Stick X and Y axis, Right Stick X Axis, and Right Bumper)
+        // Get values from Xbox Controller (Left Stick X and Y axis, Right Stick X Axis,
+        // and Right Bumper)
         double leftStickX = driverController.getLeftX();
         double leftStickY = driverController.getLeftY();
 
@@ -223,18 +236,18 @@ public class Robot extends TimedRobot {
         double rightStickX = driverController.getRightX();
 
         boolean modeButton = driverController.getRightBumper();
-        
-        double wristUp =  operatorController.getLeftTriggerAxis();
-        double wristDown = operatorController.getRightTriggerAxis();
-        boolean grabButton = operatorController.getXButton();
-        boolean releaseButton = operatorController.getBButton();
-        
-        //TODO ADD BUTTONS IN USE MEANING CAMERA SWITCH BUTTONS AND ARM RAISING BUTTONS
 
-        boolean armPosUp = operatorController.getRightBumper();
-        boolean armPosDown = operatorController.getLeftBumper();
+        double wristUp = armController.getLeftTriggerAxis();
+        double wristDown = armController.getRightTriggerAxis();
+        boolean grabButton = clawController.getXButton();
+        boolean releaseButton = clawController.getBButton();
 
-        //frontLeftDrive.getEncoder().
+        // TODO ADD BUTTONS IN USE MEANING CAMERA SWITCH BUTTONS AND ARM RAISING BUTTONS
+
+        boolean armPosUp = armController.getRightBumper();
+        boolean armPosDown = armController.getLeftBumper();
+
+        // frontLeftDrive.getEncoder().
         if (DriverCamButton > 0.1) {
             System.out.println("Driver Cam");
             cameraSelection.setString(DriverCam.getName());
@@ -242,130 +255,133 @@ public class Robot extends TimedRobot {
             System.out.println("Arm Cam");
             cameraSelection.setString(ArmCam.getName());
         }
-        //Shaping the Left Y Axis for smoother Control
-        double leftStickY_shaped; 
-        if(leftStickY > 0) {
-        leftStickY_shaped = leftStickY*leftStickY;
+        // Shaping the Left Y Axis for smoother Control
+        double leftStickY_shaped;
+        if (leftStickY > 0) {
+            leftStickY_shaped = leftStickY * leftStickY;
         } else {
-        leftStickY_shaped = -leftStickY*leftStickY;
+            leftStickY_shaped = -leftStickY * leftStickY;
         }
 
         // arm controls
-        //String armSet = "start";
-         
-        if(operatorController.getYButton()){
-            armExtensionMotor.set(VictorSPXControlMode.PercentOutput,0.5);
+        // String armSet = "start";
+
+        if (armController.getYButton()) {
+            armExtensionMotor.set(VictorSPXControlMode.PercentOutput, 0.5);
             SmartDashboard.putString("Extension Status", "Extending");
-        } else if(operatorController.getAButton()){
-            armExtensionMotor.set(VictorSPXControlMode.PercentOutput,-0.5);
+        } else if (armController.getAButton()) {
+            armExtensionMotor.set(VictorSPXControlMode.PercentOutput, -0.5);
             SmartDashboard.putString("Extension Status", "Retracting");
-        }else {
+        } else {
             armExtensionMotor.set(VictorSPXControlMode.Disabled, 0);
             SmartDashboard.putString("Extension Status", "Stopped");
-        }  
-        //manual arm control 
-        if(armPosUp){
+        }
+        // manual arm control
+        if (armPosUp) {
             armLiftMotor.set(.15);
-        }else if (armPosDown){
+        } else if (armPosDown) {
             armLiftMotor.set(-.15);
         } else {
             armLiftMotor.disable();
         }
 
-        if(wristUp > 0){
+        if (wristUp > 0) {
             wristMotor.set(.1);
-        } else if(wristDown > 0){
+        } else if (wristDown > 0) {
             wristMotor.set(-.1);
         } else {
             wristMotor.disable();
         }
 
-
-
-        //Logic for arm going up
-        /*if(armPosUp && armSet != "high"){
-            if(armSet == "start"){
-                armSet = "low";
-                armPosition(armSet);
-            } else if(armSet == "low"){
-                armSet = "med";
-                armPosition("med");
-            } else if(armSet == "med"){
-                armSet = "high";
-                armPosition(armSet);
-            }
-        // logic for arm going down
-        } else if(armPosDown && armSet != "start"){
-            if(armSet == "high"){
-                armSet = "med";
-                armPosition(armSet);
-            } else if (armSet =="med"){
-                armSet = "low";
-                armPosition(armSet);
-            } else if (armSet == "low"){
-                armSet = "start";
-                armPosition(armSet);
-            }
-        }
-        */
-
+        // Logic for arm going up
+        /*
+         * if(armPosUp && armSet != "high"){
+         * if(armSet == "start"){
+         * armSet = "low";
+         * armPosition(armSet);
+         * } else if(armSet == "low"){
+         * armSet = "med";
+         * armPosition("med");
+         * } else if(armSet == "med"){
+         * armSet = "high";
+         * armPosition(armSet);
+         * }
+         * // logic for arm going down
+         * } else if(armPosDown && armSet != "start"){
+         * if(armSet == "high"){
+         * armSet = "med";
+         * armPosition(armSet);
+         * } else if (armSet =="med"){
+         * armSet = "low";
+         * armPosition(armSet);
+         * } else if (armSet == "low"){
+         * armSet = "start";
+         * armPosition(armSet);
+         * }
+         * }
+         */
 
         // claw controls
-        if(grabButton){
+        if (grabButton) {
             gripperDoubleSolenoid.set(Value.kForward);
-        }else if(releaseButton){
+        } else if (releaseButton) {
             gripperDoubleSolenoid.set(Value.kReverse);
-        }else{
+        } else {
             gripperDoubleSolenoid.set(Value.kOff);
         }
 
-        //Calling the Swerve Drive Function and Feeding it the Values from our Controller
-        //Left Stick Y Shaped is being assigned to the Drive Speed, Right Stick X is being assigned to Wheel Turning, left X is being assigned to diff speed and Right Bumper selects mode
+        // Calling the Swerve Drive Function and Feeding it the Values from our
+        // Controller
+        // Left Stick Y Shaped is being assigned to the Drive Speed, Right Stick X is
+        // being assigned to Wheel Turning, left X is being assigned to diff speed and
+        // Right Bumper selects mode
 
         SwerveDrive(leftStickY_shaped, rightStickX, leftStickX, modeButton);
     }
 
-    /*public void armPosition(String position){
-        //double armEq;
-        //double armGain;
-        //double armError;
-        RelativeEncoder armLiftEncoder = armLiftMotor.getEncoder();
-        double armLiftPosition = Math.max(0, Math.min(, kDefaultPeriod))
+    /*
+     * public void armPosition(String position){
+     * //double armEq;
+     * //double armGain;
+     * //double armError;
+     * RelativeEncoder armLiftEncoder = armLiftMotor.getEncoder();
+     * double armLiftPosition = Math.max(0, Math.min(, kDefaultPeriod))
+     * 
+     * 
+     * //double armLiftPosition = armLiftEncoder.getPosition();
+     * 
+     * switch(position) {
+     * case "start":
+     * if(armLiftEncoder.getPosition() != 0.00 && armLiftEncoder.getPosition() > 0){
+     * while(armLiftEncoder.getPosition() > 0) {
+     * armLiftMotor.set(-.25);
+     * }
+     * }
+     * break;
+     * 
+     * case "low":
+     * if(armLiftEncoder.getPosition() != 15.00 && armLiftEncoder.getPosition() >
+     * 17.00){
+     * while(armLiftEncoder.getPosition() > )
+     * }
+     * break;
+     * 
+     * case "med":
+     * 
+     * break;
+     * 
+     * case "high":
+     * 
+     * break;
+     * 
+     * }
+     * }
+     */
 
+    // Creation of Swerve Drive Function
+    public void SwerveDrive(double driveSpeed, double steer, double diffSpeed, boolean mode) {
 
-        //double armLiftPosition = armLiftEncoder.getPosition();
-
-        switch(position) {
-            case "start":
-                if(armLiftEncoder.getPosition() != 0.00 && armLiftEncoder.getPosition() > 0){
-                    while(armLiftEncoder.getPosition() > 0) {
-                        armLiftMotor.set(-.25);
-                    }
-                }
-            break;
-            
-            case "low": 
-                if(armLiftEncoder.getPosition() != 15.00 && armLiftEncoder.getPosition() > 17.00){
-                    while(armLiftEncoder.getPosition() > )
-                }
-            break;
-
-            case "med":
-
-            break;
-
-            case "high":
-
-            break;
-
-        }
-    }*/
-
-
-    //Creation of Swerve Drive Function
-    public void SwerveDrive(double driveSpeed, double steer, double diffSpeed, boolean mode){
-
-        //Doubles that will be used in equations later
+        // Doubles that will be used in equations later
         double frontRightEq;
         double frontLeftEq;
         double backRightEq;
@@ -379,62 +395,65 @@ public class Robot extends TimedRobot {
         double backRightError;
         double backLeftError;
 
-        //Average Voltages from our Analog encoders
+        // Average Voltages from our Analog encoders
         double frontRightAverage = frontRightEnc.getAverageVoltage();
         double frontLeftAverage = frontLeftEnc.getAverageVoltage();
         double backRightAverage = backRightEnc.getAverageVoltage();
         double backLeftAverage = backLeftEnc.getAverageVoltage();
 
-        //Mode Selector
-        //if True, Sets wheels to 45deg angles and allows robot to spin in place, otherwise just drive normal.
+        // Mode Selector
+        // if True, Sets wheels to 45deg angles and allows robot to spin in place,
+        // otherwise just drive normal.
 
-        if(mode){
-            //45deg and set the back to the opposite of the front
-            gainFront = .5*1.25;
-            gainBack = -.5*1.25;
+        if (mode) {
+            // 45deg and set the back to the opposite of the front
+            gainFront = .5 * 1.25;
+            gainBack = -.5 * 1.25;
         } else {
             // 90deg wheels all alligned
             gainFront = 1.25;
             gainBack = 1.25;
         }
 
-        //Equation that requires information about wheel allignment taking the mode and right stick value multiplying them and adding the base voltage
-        frontRightEq = gainFront*(steer) + 0.34;
-        frontLeftEq = gainFront*(steer) + 4.17;
-        backRightEq = gainBack*(steer) + 3.84;
-        backLeftEq = gainBack*(steer) + 0.90;
+        // Equation that requires information about wheel allignment taking the mode and
+        // right stick value multiplying them and adding the base voltage
+        frontRightEq = gainFront * (steer) + 0.34;
+        frontLeftEq = gainFront * (steer) + 4.17;
+        backRightEq = gainBack * (steer) + 3.84;
+        backLeftEq = gainBack * (steer) + 0.90;
 
-        //Compute Error Signals from each Encoder and Adjusts if command/feedback flips from 0 to 5 or vise versa
+        // Compute Error Signals from each Encoder and Adjusts if command/feedback flips
+        // from 0 to 5 or vise versa
 
         frontRightError = frontRightEq - frontRightAverage;
-        if(frontRightError > 3.5){
+        if (frontRightError > 3.5) {
             frontRightError = frontRightError - 5.0;
         }
-        if(frontRightError < -3.5){
+        if (frontRightError < -3.5) {
             frontRightError = frontRightError + 5.0;
         }
 
         frontLeftError = frontLeftEq - frontLeftAverage;
-        if(frontLeftError > 3.5){
+        if (frontLeftError > 3.5) {
             frontLeftError = frontLeftError - 5.0;
         }
-        if(frontLeftError < -3.5){
+        if (frontLeftError < -3.5) {
             frontLeftError = frontLeftError + 5.0;
         }
 
         backRightError = backRightEq - backRightAverage;
-        if(backRightError > 3.5){
+        if (backRightError > 3.5) {
             backRightError = backRightError - 5.0;
         }
-        if(backRightError < -3.5){
+        if (backRightError < -3.5) {
             backRightError = backRightError + 5.0;
         }
 
         backLeftError = backLeftEq - backLeftAverage;
-        if(backLeftError > 3.5){
+        if (backLeftError > 3.5) {
             backLeftError = backLeftError - 5.0;
         }
-        if(backLeftError < -3.5){
+        if (backLeftError < -3.5) {
             backLeftError = backLeftError + 5.0;
         }
 
@@ -442,46 +461,49 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("back left Voltage", backLeftAverage);
         SmartDashboard.putNumber("front right Voltage", frontRightAverage);
         SmartDashboard.putNumber("back right Voltage", backRightAverage);
-        //Set steering motor commands to drive the error to 0
-        
-        frontRightTurn.set(VictorSPXControlMode.PercentOutput,frontRightError*1.5);
-        frontLeftTurn.set(VictorSPXControlMode.PercentOutput,frontLeftError*1.5);
-        backRightTurn.set(VictorSPXControlMode.PercentOutput,backRightError*1.5);
-        backLeftTurn.set(VictorSPXControlMode.PercentOutput,backLeftError*1.5);
-        
-        //Sets the Driving Motors power to drive
+        // Set steering motor commands to drive the error to 0
 
-        frontRightDrive.set(Math.max(-1, Math.min(1, (driveSpeed+diffSpeed))));
-        frontLeftDrive.set(Math.max(-1, Math.min(1, (driveSpeed+diffSpeed))));
-        backRightDrive.set(Math.max(-1, Math.min(1, (driveSpeed+diffSpeed))));
-        backLeftDrive.set(Math.max(-1, Math.min(1, (driveSpeed+diffSpeed))));
+        frontRightTurn.set(VictorSPXControlMode.PercentOutput, frontRightError * 1.5);
+        frontLeftTurn.set(VictorSPXControlMode.PercentOutput, frontLeftError * 1.5);
+        backRightTurn.set(VictorSPXControlMode.PercentOutput, backRightError * 1.5);
+        backLeftTurn.set(VictorSPXControlMode.PercentOutput, backLeftError * 1.5);
+
+        // Sets the Driving Motors power to drive
+
+        frontRightDrive.set(Math.max(-1, Math.min(1, (driveSpeed + diffSpeed))));
+        frontLeftDrive.set(Math.max(-1, Math.min(1, (driveSpeed + diffSpeed))));
+        backRightDrive.set(Math.max(-1, Math.min(1, (driveSpeed + diffSpeed))));
+        backLeftDrive.set(Math.max(-1, Math.min(1, (driveSpeed + diffSpeed))));
 
     }
 
-
-
-
     /** This function is called once when the robot is disabled. */
     @Override
-    public void disabledInit() {}
+    public void disabledInit() {
+    }
 
     /** This function is called periodically when disabled. */
     @Override
-    public void disabledPeriodic() {}
+    public void disabledPeriodic() {
+    }
 
     /** This function is called once when test mode is enabled. */
     @Override
-    public void testInit() {}
+    public void testInit() {
+    }
 
     /** This function is called periodically during test mode. */
     @Override
-    public void testPeriodic() {}
+    public void testPeriodic() {
+    }
 
     /** This function is called once when the robot is first started up. */
     @Override
-    public void simulationInit() {}
+    public void simulationInit() {
+    }
 
     /** This function is called periodically whilst in simulation. */
     @Override
-    public void simulationPeriodic() {}
+    public void simulationPeriodic() {
+    }
 }
